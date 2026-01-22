@@ -25,5 +25,14 @@ class Event(models.Model):
             canvas.save(buffer, 'PNG')
             self.qr_code.save(fname, ContentFile(buffer.getvalue()), save=False)
         super().save(*args, **kwargs)
+
+class QRCode(models.Model):
+    qr_type = models.CharField(max_length=20)
+    data = models.TextField()
+    qr_image = models.ImageField(upload_to='qrcodes/')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.qr_type}: {self.data[:50]}"
     
     
