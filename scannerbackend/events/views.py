@@ -9,6 +9,8 @@ import qrcode
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
+import base64
+from pyzbar.pyzbar import decode
 
 # Create your views here.
 
@@ -68,3 +70,36 @@ def generate_qr(request):
     qr_code_instance.qr_image.save(fname, ContentFile(buffer.getvalue()), save=True)
 
     return HttpResponse(buffer.getvalue(), content_type='image/png')
+
+@api_view(['POST'])
+def decode_qr(request):
+    image_data = request.data.get('image')
+    if not image_data:
+        return Response({'error': 'No image provided'}, status=400)
+    
+    # Decode base64 image
+    try:
+        image_data = image_data.split(',')[1]  # Remove data:image/png;base64,
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(BytesIO(image_bytes))
+        
+        # Decode QR code
+        decoded_objects = decode(image)
+        if not decoded_objects:
+            return Response({'error': 'No QR code found in image'}, status=400)
+        
+        qr_data = decoded_objects[0].data.decode('utf-8')
+        
+        # Save as QRCode
+        qr_code_instance = QRCode.objects.create(
+            qr_type='scanned',
+            data=qr_data
+        )
+        fname = f'scanned_qr_{qr_code_instance.id}.png'
+        # Save the uploaded image as QR image
+        qr_code_instance.qr_image.save(fname, ContentFile(image_bytes), save=True)
+        
+        serializer = QRCodeSerializer(qr_code_instance)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
