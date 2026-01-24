@@ -29,7 +29,7 @@ class Event(models.Model):
 class QRCode(models.Model):
     qr_type = models.CharField(max_length=20)
     data = models.TextField()
-    qr_image = models.ImageField(upload_to='qrcodes/')
+    qr_image = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
